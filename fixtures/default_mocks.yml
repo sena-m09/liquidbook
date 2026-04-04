@@ -1,0 +1,88 @@
+shop:
+  name: "Preview Shop"
+  url: "https://preview-shop.myshopify.com"
+  currency: "JPY"
+  money_format: "¥{{amount}}"
+
+product:
+  title: "サンプル商品"
+  handle: "sample-product"
+  description: "<p>これはプレビュー用のサンプル商品です。</p>"
+  price: 1980
+  compare_at_price: 2980
+  available: true
+  type: "サンプル"
+  vendor: "Preview Vendor"
+  featured_image:
+    src: "https://placehold.co/600x600/EEE/31343C?text=Product"
+    alt: "サンプル商品画像"
+    width: 600
+    height: 600
+  images:
+    - src: "https://placehold.co/600x600/EEE/31343C?text=Image+1"
+      alt: "商品画像 1"
+    - src: "https://placehold.co/600x600/EEE/31343C?text=Image+2"
+      alt: "商品画像 2"
+  variants:
+    - title: "デフォルト"
+      price: 1980
+      available: true
+      sku: "SAMPLE-001"
+  tags:
+    - "sample"
+    - "preview"
+
+collection:
+  title: "サンプルコレクション"
+  handle: "sample-collection"
+  description: "プレビュー用コレクション"
+  products_count: 12
+  products:
+    - title: "商品 1"
+      handle: "product-1"
+      price: 1980
+      featured_image:
+        src: "https://placehold.co/400x400/EEE/31343C?text=1"
+    - title: "商品 2"
+      handle: "product-2"
+      price: 2980
+      featured_image:
+        src: "https://placehold.co/400x400/EEE/31343C?text=2"
+    - title: "商品 3"
+      handle: "product-3"
+      price: 3980
+      featured_image:
+        src: "https://placehold.co/400x400/EEE/31343C?text=3"
+
+cart:
+  item_count: 2
+  total_price: 4960
+  items:
+    - title: "商品 1"
+      quantity: 1
+      price: 1980
+    - title: "商品 2"
+      quantity: 1
+      price: 2980
+
+page:
+  title: "サンプルページ"
+  handle: "sample-page"
+  content: "<p>プレビュー用のページコンテンツです。</p>"
+
+customer:
+  first_name: "太郎"
+  last_name: "テスト"
+  email: "test@example.com"
+
+request:
+  locale:
+    iso_code: "ja"
+    name: "Japanese"
+  host: "localhost:4567"
+
+settings:
+  type_header_font:
+    family: "sans-serif"
+  type_body_font:
+    family: "sans-serif"
