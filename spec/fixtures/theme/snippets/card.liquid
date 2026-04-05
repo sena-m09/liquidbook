@@ -1,0 +1,10 @@
+{% comment %}
+  @param {String} title [My Card] - Card heading text
+  @param {Number} price [1980] - Price in yen
+  @param {Boolean} featured [false] - Show featured badge
+{% endcomment %}
+
+<div class="card{% if featured %} card--featured{% endif %}">
+  <h2>{{ title }}</h2>
+  <span>{{ price | money }}</span>
+</div>
