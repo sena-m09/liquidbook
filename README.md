@@ -1,5 +1,7 @@
 # Liquidbook
 
+[![CI](https://github.com/sena-m09/liquidbook/actions/workflows/test.yml/badge.svg)](https://github.com/sena-m09/liquidbook/actions/workflows/test.yml)
+
 A Storybook-like local preview server for Shopify Liquid templates. Browse and preview your sections and snippets in the browser instantly.
 
 ## Features

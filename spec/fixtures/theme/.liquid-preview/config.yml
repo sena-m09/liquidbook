@@ -1,0 +1,5 @@
+port: 4567
+host: "127.0.0.1"
+head:
+  - '<meta name="preview" content="true">'
+  - "./assets/styles.css"
