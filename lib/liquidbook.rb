@@ -9,6 +9,7 @@ require_relative "liquidbook/mock_data"
 require_relative "liquidbook/filters/shopify_filters"
 require_relative "liquidbook/tags/section_tag"
 require_relative "liquidbook/tags/render_tag"
+require_relative "liquidbook/pid_manager"
 require_relative "liquidbook/theme_renderer"
 require_relative "liquidbook/server/app"
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "thor"
+require "fileutils"
 
 module Liquidbook
   class CLI < Thor
@@ -14,6 +15,10 @@ module Liquidbook
       theme_root = File.expand_path(options[:root])
       Liquidbook.root = theme_root
 
+      pid_manager = PidManager.new(theme_root: theme_root)
+      result = pid_manager.ensure_can_start!
+      warn "Warning: Removed stale PID file." if result == :stale_pid_cleaned
+
       puts "Liquidbook v#{VERSION}"
       puts "Theme root: #{theme_root}"
       puts "Server: http://#{options[:host]}:#{options[:port]}"
@@ -24,9 +29,31 @@ module Liquidbook
       puts "Found #{sections} sections, #{snippets} snippets"
       puts ""
 
+      pid_manager.write_pid
+      at_exit { pid_manager.remove_pid }
+
       Server::App.set :port, options[:port]
       Server::App.set :bind, options[:host]
       Server::App.run!
+    end
+
+    desc "stop", "Stop the running preview server"
+    option :root, type: :string, default: ".", aliases: "-r", desc: "Theme root directory"
+    def stop
+      theme_root = File.expand_path(options[:root])
+      pid_manager = PidManager.new(theme_root: theme_root)
+
+      case pid_manager.stop!
+      when :stopped
+        puts "Server stopped."
+      when :not_running
+        puts "Server is not running."
+      when :stale_pid_cleaned
+        puts "Server is not running (removed stale PID file)."
+      end
+    rescue Liquidbook::Error => e
+      warn "Error: #{e.message}"
+      exit 1
     end
 
     desc "render TEMPLATE", "Render a single template to stdout"
