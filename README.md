@@ -1,6 +1,6 @@
 # Liquidbook
 
-[![CI](https://github.com/sena-m09/liquidbook/actions/workflows/test.yml/badge.svg)](https://github.com/sena-m09/liquidbook/actions/workflows/test.yml)
+[![CI](https://github.com/sena-m09/liquidbook/actions/workflows/ci.yml/badge.svg)](https://github.com/sena-m09/liquidbook/actions/workflows/ci.yml)
 
 A Storybook-like local preview server for Shopify Liquid templates. Browse and preview your sections and snippets in the browser instantly.
 
@@ -77,6 +77,8 @@ git clone https://github.com/sena-m09/liquidbook.git
 cd liquidbook
 bin/setup
 ```
+
+See [Release Process](docs/RELEASING.md) for how to publish a new version.
 
 ## License
 

@@ -76,6 +76,8 @@ cd liquidbook
 bin/setup
 ```
 
+新しいバージョンのリリース方法は [Release Process](RELEASING.md) を参照してください。
+
 ## ライセンス
 
 [MIT License](https://opensource.org/licenses/MIT)
