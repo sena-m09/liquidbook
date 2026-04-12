@@ -14,46 +14,133 @@
       --lp-accent: #5c6ac4;
       --lp-border: #e0e0e0;
       --lp-radius: 8px;
+      --lp-sidebar-w: 240px;
+      --lp-topbar-h: 48px;
     }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--lp-bg);
+      color: var(--lp-text);
+    }
+
+    /* ── Topbar ── */
     .lp-topbar {
       background: var(--lp-surface);
       border-bottom: 1px solid var(--lp-border);
-      padding: 12px 24px;
+      padding: 0 20px;
+      height: var(--lp-topbar-h);
       display: flex;
       align-items: center;
       gap: 16px;
-      position: sticky;
+      position: fixed;
       top: 0;
-      z-index: 10000;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      left: 0;
+      right: 0;
+      z-index: 100;
     }
     .lp-topbar h1 {
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       color: var(--lp-accent);
-      margin: 0;
     }
-    .lp-topbar nav a {
-      color: var(--lp-text-sub);
+    .lp-topbar h1 a {
+      color: inherit;
       text-decoration: none;
-      font-size: 14px;
     }
-    .lp-topbar nav a:hover { color: var(--lp-accent); }
-    .lp-container {
-      max-width: 1200px;
-      margin: 0 auto;
+
+    /* ── Sidebar ── */
+    .lp-sidebar {
+      position: fixed;
+      top: var(--lp-topbar-h);
+      left: 0;
+      bottom: 0;
+      width: var(--lp-sidebar-w);
+      background: var(--lp-surface);
+      border-right: 1px solid var(--lp-border);
+      overflow-y: auto;
+      padding: 16px 0;
+      font-size: 13px;
+    }
+    .lp-sidebar-group {
+      margin-bottom: 8px;
+    }
+    .lp-sidebar-heading {
+      padding: 4px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--lp-text-sub);
+    }
+    .lp-sidebar-item {
+      display: block;
+      padding: 6px 16px 6px 24px;
+      color: var(--lp-text);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .lp-sidebar-item:hover {
+      background: var(--lp-bg);
+    }
+    .lp-sidebar-item.active {
+      background: var(--lp-bg);
+      border-left-color: var(--lp-accent);
+      color: var(--lp-accent);
+      font-weight: 500;
+    }
+    .lp-sidebar-empty {
+      padding: 6px 16px 6px 24px;
+      color: var(--lp-text-sub);
+      font-style: italic;
+    }
+
+    /* ── Main ── */
+    .lp-main {
+      margin-left: var(--lp-sidebar-w);
+      margin-top: var(--lp-topbar-h);
       padding: 24px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: calc(100vh - var(--lp-topbar-h));
     }
   </style>
 </head>
 <body>
   <div class="lp-topbar">
-    <h1>Liquidbook</h1>
-    <nav><a href="/">Home</a></nav>
+    <h1><a href="/">Liquidbook</a></h1>
   </div>
-  <div class="lp-container">
+
+  <nav class="lp-sidebar">
+    <div class="lp-sidebar-group">
+      <div class="lp-sidebar-heading">Sections</div>
+      <% if @nav_sections.empty? %>
+        <div class="lp-sidebar-empty">No sections</div>
+      <% else %>
+        <% @nav_sections.each do |name| %>
+          <a href="/sections/<%= h(name) %>"
+             class="lp-sidebar-item<%= ' active' if @current_path == "/sections/#{name}" %>">
+            <%= h(name) %>
+          </a>
+        <% end %>
+      <% end %>
+    </div>
+    <div class="lp-sidebar-group">
+      <div class="lp-sidebar-heading">Snippets</div>
+      <% if @nav_snippets.empty? %>
+        <div class="lp-sidebar-empty">No snippets</div>
+      <% else %>
+        <% @nav_snippets.each do |name| %>
+          <a href="/snippets/<%= h(name) %>"
+             class="lp-sidebar-item<%= ' active' if @current_path == "/snippets/#{name}" %>">
+            <%= h(name) %>
+          </a>
+        <% end %>
+      <% end %>
+    </div>
+  </nav>
+
+  <main class="lp-main">
     <%= yield %>
-  </div>
+  </main>
 </body>
 </html>
