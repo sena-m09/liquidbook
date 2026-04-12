@@ -81,6 +81,9 @@
       border-left: 3px solid transparent;
       transition: background 0.15s, border-color 0.15s;
     }
+    .lp-sidebar-item[hidden] {
+      display: none;
+    }
     .lp-sidebar-item:hover {
       background: var(--lp-bg);
     }
@@ -94,6 +97,22 @@
       padding: 6px 16px 6px 24px;
       color: var(--lp-text-sub);
       font-style: italic;
+    }
+    .lp-sidebar-search {
+      padding: 8px 12px 12px;
+    }
+    .lp-sidebar-search-input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--lp-border);
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .lp-sidebar-search-input:focus-visible {
+      border-color: var(--lp-accent);
+      outline: 2px solid var(--lp-accent);
+      outline-offset: -1px;
     }
 
     /* ── Main ── */
@@ -111,6 +130,9 @@
   </div>
 
   <nav class="lp-sidebar">
+    <div class="lp-sidebar-search">
+      <input type="text" class="lp-sidebar-search-input" placeholder="テンプレートを検索">
+    </div>
     <div class="lp-sidebar-group">
       <div class="lp-sidebar-heading">Sections</div>
       <% if @nav_sections.empty? %>
@@ -142,5 +164,21 @@
   <main class="lp-main">
     <%= yield %>
   </main>
+  <script>
+    document.querySelector('.lp-sidebar-search-input').addEventListener('input', function() {
+      const query = this.value.toLowerCase();
+      document.querySelectorAll('.lp-sidebar-group').forEach(function(group) {
+        const items = group.querySelectorAll('.lp-sidebar-item');
+        if (items.length === 0) return;
+        let visibleCount = 0;
+        items.forEach(function(item) {
+          const match = item.textContent.toLowerCase().includes(query);
+          item.hidden = !match;
+          if (match) visibleCount++;
+        });
+        group.hidden = visibleCount === 0;
+      });
+    });
+  </script>
 </body>
 </html>
