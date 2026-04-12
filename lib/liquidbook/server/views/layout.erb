@@ -165,20 +165,48 @@
     <%= yield %>
   </main>
   <script>
-    document.querySelector('.lp-sidebar-search-input').addEventListener('input', function() {
-      const query = this.value.toLowerCase();
-      document.querySelectorAll('.lp-sidebar-group').forEach(function(group) {
-        const items = group.querySelectorAll('.lp-sidebar-item');
-        if (items.length === 0) return;
-        let visibleCount = 0;
-        items.forEach(function(item) {
-          const match = item.textContent.toLowerCase().includes(query);
-          item.hidden = !match;
-          if (match) visibleCount++;
+    (function() {
+      const input = document.querySelector('.lp-sidebar-search-input');
+      const links = document.querySelectorAll('.lp-sidebar-item');
+
+      function filterSidebar(query) {
+        document.querySelectorAll('.lp-sidebar-group').forEach(function(group) {
+          const items = group.querySelectorAll('.lp-sidebar-item');
+          if (items.length === 0) return;
+          let visibleCount = 0;
+          items.forEach(function(item) {
+            const match = item.textContent.toLowerCase().includes(query);
+            item.hidden = !match;
+            if (match) visibleCount++;
+          });
+          group.hidden = visibleCount === 0;
         });
-        group.hidden = visibleCount === 0;
+      }
+
+      function updateLinks(value) {
+        links.forEach(function(a) {
+          const url = new URL(a.href);
+          if (value) {
+            url.searchParams.set('q', value);
+          } else {
+            url.searchParams.delete('q');
+          }
+          a.href = url;
+        });
+      }
+
+      input.addEventListener('input', function() {
+        filterSidebar(this.value.toLowerCase());
+        updateLinks(this.value);
       });
-    });
+
+      var q = new URLSearchParams(location.search).get('q');
+      if (q) {
+        input.value = q;
+        filterSidebar(q.toLowerCase());
+        updateLinks(q);
+      }
+    })();
   </script>
 </body>
 </html>
