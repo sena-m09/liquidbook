@@ -153,7 +153,7 @@ module Liquidbook
       def parse_overrides(params)
         overrides = {}
         params.each do |key, value|
-          next if %w[name splat captures].include?(key)
+          next if %w[name splat captures q].include?(key)
 
           overrides[key] = value
         end
