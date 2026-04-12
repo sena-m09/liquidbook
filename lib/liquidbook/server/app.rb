@@ -9,6 +9,12 @@ module Liquidbook
       set :views, File.expand_path("views", __dir__)
       set :public_folder, -> { File.join(Liquidbook.root, "assets") }
 
+      before do
+        @nav_sections = ThemeRenderer.new(theme_root: Liquidbook.root).sections
+        @nav_snippets = ThemeRenderer.new(theme_root: Liquidbook.root).snippets
+        @current_path = request.path_info
+      end
+
       helpers do
         def renderer
           @renderer ||= ThemeRenderer.new(theme_root: Liquidbook.root)
