@@ -206,6 +206,12 @@
         filterSidebar(q.toLowerCase());
         updateLinks(q);
       }
+
+      const active = document.querySelector('.lp-sidebar-item.active');
+      if (active) {
+        const sidebar = document.querySelector('.lp-sidebar');
+        sidebar.scrollTop = active.offsetTop;
+      }
     })();
   </script>
 </body>
