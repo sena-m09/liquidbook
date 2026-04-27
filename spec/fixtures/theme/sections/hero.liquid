@@ -1,6 +1,8 @@
 <section class="hero">
   <h1>{{ section.settings.title }}</h1>
-  {% if section.settings.show_button %}<button>Shop Now</button>{% endif %}
+  {% if section.settings.show_button -%}
+    <button>Shop Now</button>
+  {%- endif %}
   {% for block in section.blocks %}
     <img src="{{ block.settings.image_src }}">
   {% endfor %}
@@ -17,9 +19,7 @@
     {
       "type": "slide",
       "name": "Slide",
-      "settings": [
-        { "id": "image_src", "type": "text", "label": "Image", "default": "https://placehold.co/800x400" }
-      ]
+      "settings": [{ "id": "image_src", "type": "text", "label": "Image", "default": "https://placehold.co/800x400" }]
     }
   ]
 }
