@@ -1,0 +1,13 @@
+{% comment %}
+  @param {String} title [Product name] - Product title
+  @param {String} price [1980] - Price
+  @param {Boolean} featured [false] - Show featured badge
+{% endcomment %}
+
+<div class="product-card{% if featured %} product-card--featured{% endif %}">
+  <h3 class="product-card__title">{{ title }}</h3>
+  <span class="product-card__price">{{ price | money }}</span>
+  {% if featured %}
+    {% render 'badge', label: "Featured" %}
+  {% endif %}
+</div>

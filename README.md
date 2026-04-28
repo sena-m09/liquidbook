@@ -78,6 +78,12 @@ cd liquidbook
 bin/setup
 ```
 
+Run the preview server against the bundled example theme:
+
+```bash
+bundle exec liquidbook server -r example
+```
+
 See [Release Process](docs/RELEASING.md) for how to publish a new version.
 
 ## License
