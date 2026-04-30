@@ -89,6 +89,20 @@ RSpec.describe Liquidbook::TemplateAnalyzer do
       expect(price[:properties]).to eq([{ lookups: [], filters: ["money", "plus"] }])
     end
 
+    it "preserves filters when the same variable appears with and without filters" do
+      source = "{{ price }}{{ price | money }}"
+      result = described_class.new(source).external_variables
+      price = result.find { |v| v[:name] == "price" }
+      expect(price[:properties]).to eq([{ lookups: [], filters: ["money"] }])
+    end
+
+    it "records filter argument variables with empty filters" do
+      source = "{{ title | append: suffix }}"
+      result = described_class.new(source).external_variables
+      suffix = result.find { |v| v[:name] == "suffix" }
+      expect(suffix[:properties]).to eq([{ lookups: [], filters: [] }])
+    end
+
     it "collects filters per property separately" do
       source = "{{ product.title | upcase }}{{ product.price | money }}"
       result = described_class.new(source).external_variables
