@@ -81,7 +81,7 @@ module Liquidbook
 
     def walk_for(node, vars, scope)
       coll = node.collection_name
-      add_lookup(vars, coll, scope) if coll.is_a?(Liquid::VariableLookup)
+      add_lookup(vars, coll, scope, collection: true) if coll.is_a?(Liquid::VariableLookup)
 
       inner_scope = scope.child_with([node.variable_name, "forloop"])
       node.nodelist&.each { |child| walk(child, vars, inner_scope) }
@@ -102,7 +102,10 @@ module Liquidbook
 
       left = condition.left
       right = condition.right
-      add_lookup(vars, left, scope) if left.is_a?(Liquid::VariableLookup)
+      operator = condition.instance_variable_get(:@operator)
+      truthy = left.is_a?(Liquid::VariableLookup) && operator.nil? && right.nil?
+
+      add_lookup(vars, left, scope, truthy_condition: truthy) if left.is_a?(Liquid::VariableLookup)
       add_lookup(vars, right, scope) if right.is_a?(Liquid::VariableLookup)
 
       child = condition.child_condition
@@ -124,7 +127,7 @@ module Liquidbook
       end
     end
 
-    def add_lookup(vars, lookup, scope, filters: [])
+    def add_lookup(vars, lookup, scope, filters: [], collection: false, truthy_condition: false)
       return unless lookup.is_a?(Liquid::VariableLookup)
       return if scope.local?(lookup.name)
 
@@ -139,6 +142,8 @@ module Liquidbook
 
       prop[:filters].concat(filters)
       prop[:filters].uniq!
+      prop[:collection] = true if collection
+      prop[:truthy_condition] = true if truthy_condition
     end
 
     def walk_nodelist(node, vars, scope)

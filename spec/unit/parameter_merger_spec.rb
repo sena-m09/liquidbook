@@ -90,6 +90,84 @@ RSpec.describe Liquidbook::ParameterMerger do
       end
     end
 
+    context "when filter-based type inference is available" do
+      let(:variables) do
+        [{ name: "price", properties: [{ lookups: [], filters: ["money"] }] }]
+      end
+
+      it "infers type from filter name" do
+        result = merger.merge
+        price = result.find { |p| p["name"] == "price" }
+        expect(price["type"]).to eq("number")
+      end
+    end
+
+    context "when variable is a for-loop collection" do
+      let(:variables) do
+        [{ name: "items", properties: [{ lookups: [], filters: [], collection: true }] }]
+      end
+
+      it "infers type as array" do
+        result = merger.merge
+        items = result.find { |p| p["name"] == "items" }
+        expect(items["type"]).to eq("array")
+      end
+    end
+
+    context "when variable is a truthy if-condition" do
+      let(:variables) do
+        [{ name: "featured", properties: [{ lookups: [], filters: [], truthy_condition: true }] }]
+      end
+
+      it "infers type as checkbox" do
+        result = merger.merge
+        featured = result.find { |p| p["name"] == "featured" }
+        expect(featured["type"]).to eq("checkbox")
+      end
+    end
+
+    context "when truthy_condition variable also has filters" do
+      let(:variables) do
+        [{ name: "count", properties: [
+          { lookups: [], filters: [], truthy_condition: true },
+          { lookups: [], filters: ["plus"] }
+        ] }]
+      end
+
+      it "prefers filter-based inference over truthy_condition" do
+        result = merger.merge
+        count = result.find { |p| p["name"] == "count" }
+        expect(count["type"]).to eq("number")
+      end
+    end
+
+    context "when @param is present alongside filter hints" do
+      let(:variables) do
+        [{ name: "price", properties: [{ lookups: [], filters: ["money"] }] }]
+      end
+      let(:param_defs) do
+        [{ "name" => "price", "type" => "text", "default" => "100", "description" => "Price" }]
+      end
+
+      it "uses @param type and ignores filter inference" do
+        result = merger.merge
+        price = result.find { |p| p["name"] == "price" }
+        expect(price["type"]).to eq("text")
+      end
+    end
+
+    context "when filters suggest conflicting types" do
+      let(:variables) do
+        [{ name: "value", properties: [{ lookups: [], filters: ["money", "upcase"] }] }]
+      end
+
+      it "returns unknown when types conflict" do
+        result = merger.merge
+        value = result.find { |p| p["name"] == "value" }
+        expect(value["type"]).to eq("unknown")
+      end
+    end
+
     context "with an empty variables list" do
       it "returns an empty array" do
         expect(merger.merge).to eq([])

@@ -22,9 +22,9 @@ RSpec.describe Liquidbook::TemplateAnalyzer do
     it "detects variables inside if conditions" do
       source = "{% if featured %}<span>yes</span>{% endif %}"
       result = described_class.new(source).external_variables
-      expect(result).to include(
-        { name: "featured", properties: [{ lookups: [], filters: [] }] }
-      )
+      featured = result.find { |v| v[:name] == "featured" }
+      expect(featured).not_to be_nil
+      expect(featured[:properties].first[:lookups]).to eq([])
     end
 
     it "detects variables in if/elsif/else chains" do
@@ -37,9 +37,9 @@ RSpec.describe Liquidbook::TemplateAnalyzer do
     it "detects the collection variable in for loops" do
       source = "{% for item in products %}{{ item.name }}{% endfor %}"
       result = described_class.new(source).external_variables
-      expect(result).to include(
-        { name: "products", properties: [{ lookups: [], filters: [] }] }
-      )
+      products = result.find { |v| v[:name] == "products" }
+      expect(products).not_to be_nil
+      expect(products[:properties].first[:lookups]).to eq([])
     end
 
     it "excludes loop variables from results" do
@@ -111,6 +111,27 @@ RSpec.describe Liquidbook::TemplateAnalyzer do
         { lookups: ["title"], filters: ["upcase"] },
         { lookups: ["price"], filters: ["money"] }
       )
+    end
+
+    it "marks for-loop collection variables with collection flag" do
+      source = "{% for item in products %}{{ item.name }}{% endfor %}"
+      result = described_class.new(source).external_variables
+      products = result.find { |v| v[:name] == "products" }
+      expect(products[:properties].first[:collection]).to be true
+    end
+
+    it "marks truthy if-condition variables with truthy_condition flag" do
+      source = "{% if featured %}yes{% endif %}"
+      result = described_class.new(source).external_variables
+      featured = result.find { |v| v[:name] == "featured" }
+      expect(featured[:properties].first[:truthy_condition]).to be true
+    end
+
+    it "does not mark comparison condition variables with truthy_condition flag" do
+      source = '{% if status == "active" %}yes{% endif %}'
+      result = described_class.new(source).external_variables
+      status = result.find { |v| v[:name] == "status" }
+      expect(status[:properties].first[:truthy_condition]).to be_nil
     end
 
     context "with fixture templates" do
