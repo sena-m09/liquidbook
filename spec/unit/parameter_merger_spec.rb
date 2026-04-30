@@ -12,7 +12,7 @@ RSpec.describe Liquidbook::ParameterMerger do
 
   describe "#merge" do
     context "when a variable has a matching @param definition" do
-      let(:variables) { [{ name: "title", lookups: [] }] }
+      let(:variables) { [{ name: "title", properties: [{ lookups: [], filters: [] }] }] }
       let(:param_defs) do
         [{ "name" => "title", "type" => "text", "default" => "My Card", "description" => "Card heading" }]
       end
@@ -26,7 +26,7 @@ RSpec.describe Liquidbook::ParameterMerger do
     end
 
     context "when a variable has no @param definition" do
-      let(:variables) { [{ name: "color", lookups: [] }] }
+      let(:variables) { [{ name: "color", properties: [{ lookups: [], filters: [] }] }] }
 
       it "returns type=unknown with nil default and description" do
         result = merger.merge
@@ -38,7 +38,10 @@ RSpec.describe Liquidbook::ParameterMerger do
 
     context "when mixing annotated and unannotated variables" do
       let(:variables) do
-        [{ name: "title", lookups: [] }, { name: "color", lookups: [] }]
+        [
+          { name: "title", properties: [{ lookups: [], filters: [] }] },
+          { name: "color", properties: [{ lookups: [], filters: [] }] }
+        ]
       end
       let(:param_defs) do
         [{ "name" => "title", "type" => "text", "default" => "Hello", "description" => "Heading" }]
@@ -59,9 +62,11 @@ RSpec.describe Liquidbook::ParameterMerger do
     context "when variables include section references" do
       let(:variables) do
         [
-          { name: "title", lookups: [] },
-          { name: "section", lookups: ["settings", "title"] },
-          { name: "section", lookups: ["blocks"] }
+          { name: "title", properties: [{ lookups: [], filters: [] }] },
+          { name: "section", properties: [
+            { lookups: ["settings", "title"], filters: [] },
+            { lookups: ["blocks"], filters: [] }
+          ] }
         ]
       end
 
@@ -73,7 +78,10 @@ RSpec.describe Liquidbook::ParameterMerger do
 
     context "when the same variable name appears with different lookups" do
       let(:variables) do
-        [{ name: "product", lookups: ["title"] }, { name: "product", lookups: ["price"] }]
+        [{ name: "product", properties: [
+          { lookups: ["title"], filters: [] },
+          { lookups: ["price"], filters: [] }
+        ] }]
       end
 
       it "deduplicates by name" do
