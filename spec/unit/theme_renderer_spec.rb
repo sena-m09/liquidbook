@@ -13,7 +13,7 @@ RSpec.describe Liquidbook::ThemeRenderer do
 
   describe "#snippets" do
     it "lists snippet names without extension" do
-      expect(renderer.snippets).to eq(%w[badge card])
+      expect(renderer.snippets).to eq(%w[badge card product-list])
     end
   end
 

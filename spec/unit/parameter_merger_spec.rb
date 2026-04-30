@@ -12,7 +12,7 @@ RSpec.describe Liquidbook::ParameterMerger do
 
   describe "#merge" do
     context "when a variable has a matching @param definition" do
-      let(:variables) { [{ name: "title", lookups: [] }] }
+      let(:variables) { [{ name: "title", properties: [{ lookups: [], filters: [] }] }] }
       let(:param_defs) do
         [{ "name" => "title", "type" => "text", "default" => "My Card", "description" => "Card heading" }]
       end
@@ -26,7 +26,7 @@ RSpec.describe Liquidbook::ParameterMerger do
     end
 
     context "when a variable has no @param definition" do
-      let(:variables) { [{ name: "color", lookups: [] }] }
+      let(:variables) { [{ name: "color", properties: [{ lookups: [], filters: [] }] }] }
 
       it "returns type=unknown with nil default and description" do
         result = merger.merge
@@ -38,7 +38,10 @@ RSpec.describe Liquidbook::ParameterMerger do
 
     context "when mixing annotated and unannotated variables" do
       let(:variables) do
-        [{ name: "title", lookups: [] }, { name: "color", lookups: [] }]
+        [
+          { name: "title", properties: [{ lookups: [], filters: [] }] },
+          { name: "color", properties: [{ lookups: [], filters: [] }] }
+        ]
       end
       let(:param_defs) do
         [{ "name" => "title", "type" => "text", "default" => "Hello", "description" => "Heading" }]
@@ -59,9 +62,11 @@ RSpec.describe Liquidbook::ParameterMerger do
     context "when variables include section references" do
       let(:variables) do
         [
-          { name: "title", lookups: [] },
-          { name: "section", lookups: ["settings", "title"] },
-          { name: "section", lookups: ["blocks"] }
+          { name: "title", properties: [{ lookups: [], filters: [] }] },
+          { name: "section", properties: [
+            { lookups: ["settings", "title"], filters: [] },
+            { lookups: ["blocks"], filters: [] }
+          ] }
         ]
       end
 
@@ -73,12 +78,107 @@ RSpec.describe Liquidbook::ParameterMerger do
 
     context "when the same variable name appears with different lookups" do
       let(:variables) do
-        [{ name: "product", lookups: ["title"] }, { name: "product", lookups: ["price"] }]
+        [{ name: "product", properties: [
+          { lookups: ["title"], filters: [] },
+          { lookups: ["price"], filters: [] }
+        ] }]
       end
 
       it "deduplicates by name" do
         result = merger.merge
         expect(result.count { |p| p["name"] == "product" }).to eq(1)
+      end
+    end
+
+    context "when filter-based type inference is available" do
+      let(:variables) do
+        [{ name: "price", properties: [{ lookups: [], filters: ["money"] }] }]
+      end
+
+      it "infers type from filter name" do
+        result = merger.merge
+        price = result.find { |p| p["name"] == "price" }
+        expect(price["type"]).to eq("number")
+      end
+    end
+
+    context "when variable is a for-loop collection" do
+      let(:variables) do
+        [{ name: "items", properties: [{ lookups: [], filters: [], collection: true }] }]
+      end
+
+      it "infers type as array" do
+        result = merger.merge
+        items = result.find { |p| p["name"] == "items" }
+        expect(items["type"]).to eq("array")
+      end
+    end
+
+    context "when variable is a truthy if-condition" do
+      let(:variables) do
+        [{ name: "featured", properties: [{ lookups: [], filters: [], truthy_condition: true }] }]
+      end
+
+      it "infers type as checkbox" do
+        result = merger.merge
+        featured = result.find { |p| p["name"] == "featured" }
+        expect(featured["type"]).to eq("checkbox")
+      end
+    end
+
+    context "when truthy_condition variable also has filters" do
+      let(:variables) do
+        [{ name: "count", properties: [
+          { lookups: [], filters: [], truthy_condition: true },
+          { lookups: [], filters: ["plus"] }
+        ] }]
+      end
+
+      it "prefers filter-based inference over truthy_condition" do
+        result = merger.merge
+        count = result.find { |p| p["name"] == "count" }
+        expect(count["type"]).to eq("number")
+      end
+    end
+
+    context "when @param is present alongside filter hints" do
+      let(:variables) do
+        [{ name: "price", properties: [{ lookups: [], filters: ["money"] }] }]
+      end
+      let(:param_defs) do
+        [{ "name" => "price", "type" => "text", "default" => "100", "description" => "Price" }]
+      end
+
+      it "uses @param type and ignores filter inference" do
+        result = merger.merge
+        price = result.find { |p| p["name"] == "price" }
+        expect(price["type"]).to eq("text")
+      end
+    end
+
+    context "when filters suggest conflicting types" do
+      let(:variables) do
+        [{ name: "value", properties: [{ lookups: [], filters: ["money", "upcase"] }] }]
+      end
+
+      it "returns unknown when types conflict" do
+        result = merger.merge
+        value = result.find { |p| p["name"] == "value" }
+        expect(value["type"]).to eq("unknown")
+      end
+    end
+
+    context "when variable is a collection with filters" do
+      let(:variables) do
+        [{ name: "items", properties: [
+          { lookups: [], filters: ["size"], collection: true }
+        ] }]
+      end
+
+      it "infers type as array regardless of filters" do
+        result = merger.merge
+        items = result.find { |p| p["name"] == "items" }
+        expect(items["type"]).to eq("array")
       end
     end
 
@@ -119,6 +219,28 @@ RSpec.describe Liquidbook::ParameterMerger do
         product = result.find { |p| p["name"] == "product" }
         expect(product["type"]).to eq("unknown")
         expect(product["default"]).to be_nil
+      end
+
+      it "infers types from filters and control structures in product-list.liquid" do
+        source = File.read(File.join(FIXTURE_THEME, "snippets", "product-list.liquid"))
+        analyzer = Liquidbook::TemplateAnalyzer.new(source)
+
+        result = described_class.new(
+          variables: analyzer.external_variables,
+          param_defs: []
+        ).merge
+
+        show_title = result.find { |p| p["name"] == "show_title" }
+        expect(show_title["type"]).to eq("checkbox")
+
+        heading = result.find { |p| p["name"] == "heading" }
+        expect(heading["type"]).to eq("text")
+
+        products = result.find { |p| p["name"] == "products" }
+        expect(products["type"]).to eq("array")
+
+        total = result.find { |p| p["name"] == "total" }
+        expect(total["type"]).to eq("number")
       end
     end
   end

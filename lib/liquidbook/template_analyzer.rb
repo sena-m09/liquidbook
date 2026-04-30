@@ -6,7 +6,8 @@ module Liquidbook
   # Usage:
   #   analyzer = TemplateAnalyzer.new(template_source)
   #   analyzer.external_variables
-  #   # => [{ name: "title", lookups: [] }, { name: "product", lookups: ["name"] }]
+  #   # => [{ name: "title", properties: [{ lookups: [], filters: ["upcase"] }] },
+  #   #     { name: "product", properties: [{ lookups: ["name"], filters: ["money"] }] }]
   class TemplateAnalyzer
     def initialize(source)
       @source = source
@@ -15,12 +16,12 @@ module Liquidbook
     def external_variables
       clean_source = strip_schema(@source)
       template = Liquid::Template.parse(clean_source)
-      vars = []
+      vars = {}
       scope = Scope.new
 
       template.root.nodelist&.each { |node| walk(node, vars, scope) }
 
-      vars.uniq
+      vars.values
     end
 
     def section_variable?(var)
@@ -80,7 +81,7 @@ module Liquidbook
 
     def walk_for(node, vars, scope)
       coll = node.collection_name
-      add_lookup(vars, coll, scope) if coll.is_a?(Liquid::VariableLookup)
+      add_lookup(vars, coll, scope, collection: true) if coll.is_a?(Liquid::VariableLookup)
 
       inner_scope = scope.child_with([node.variable_name, "forloop"])
       node.nodelist&.each { |child| walk(child, vars, inner_scope) }
@@ -101,7 +102,10 @@ module Liquidbook
 
       left = condition.left
       right = condition.right
-      add_lookup(vars, left, scope) if left.is_a?(Liquid::VariableLookup)
+      operator = condition.instance_variable_get(:@operator)
+      truthy = left.is_a?(Liquid::VariableLookup) && operator.nil? && right.nil?
+
+      add_lookup(vars, left, scope, truthy_condition: truthy) if left.is_a?(Liquid::VariableLookup)
       add_lookup(vars, right, scope) if right.is_a?(Liquid::VariableLookup)
 
       child = condition.child_condition
@@ -110,7 +114,10 @@ module Liquidbook
 
     def collect_variable(node, vars, scope)
       vl = node.is_a?(Liquid::Variable) ? node.name : nil
-      add_lookup(vars, vl, scope) if vl.is_a?(Liquid::VariableLookup)
+      if vl.is_a?(Liquid::VariableLookup)
+        filters = node.filters&.map { |name, _, _| name } || []
+        add_lookup(vars, vl, scope, filters: filters)
+      end
 
       return unless node.is_a?(Liquid::Variable)
 
@@ -120,11 +127,23 @@ module Liquidbook
       end
     end
 
-    def add_lookup(vars, lookup, scope)
+    def add_lookup(vars, lookup, scope, filters: [], collection: false, truthy_condition: false)
       return unless lookup.is_a?(Liquid::VariableLookup)
       return if scope.local?(lookup.name)
 
-      vars << { name: lookup.name, lookups: lookup.lookups }
+      key = lookup.name
+      vars[key] ||= { name: key, properties: [] }
+
+      prop = vars[key][:properties].find { |p| p[:lookups] == lookup.lookups }
+      unless prop
+        prop = { lookups: lookup.lookups, filters: [] }
+        vars[key][:properties] << prop
+      end
+
+      prop[:filters].concat(filters)
+      prop[:filters].uniq!
+      prop[:collection] = true if collection
+      prop[:truthy_condition] = true if truthy_condition
     end
 
     def walk_nodelist(node, vars, scope)

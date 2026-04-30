@@ -5,7 +5,9 @@ module Liquidbook
   # type/default/description metadata from @param comments (ParamParser).
   #
   # Variables with @param get their declared type/default/description.
-  # Variables without @param get type="unknown" with nil default/description.
+  # Variables without @param are type-inferred from filters and control structures
+  # (e.g. money → number, for-loop → array, truthy if → checkbox).
+  # When inference is inconclusive, type falls back to "unknown".
   # Section variables (name == "section") are excluded.
   #
   # Usage:
@@ -33,7 +35,7 @@ module Liquidbook
 
     def resolve(var)
       name = var[:name].to_s
-      param_index[name] || unknown(name)
+      param_index[name] || inferred(var)
     end
 
     def param_index
@@ -46,8 +48,24 @@ module Liquidbook
       var[:name].to_s == "section"
     end
 
-    def unknown(name)
-      { "name" => name, "type" => "unknown", "default" => nil, "description" => nil }
+    def inferred(var)
+      name = var[:name].to_s
+      type = infer_type(var)
+      { "name" => name, "type" => type, "default" => nil, "description" => nil }
+    end
+
+    def infer_type(var)
+      properties = var[:properties] || []
+
+      return "array" if properties.any? { |p| p[:collection] }
+      return "checkbox" if properties.any? { |p| p[:truthy_condition] } && all_filters_empty?(properties)
+
+      all_filters = properties.flat_map { |p| p[:filters] }.uniq
+      FilterTypeMap.infer(all_filters) || "unknown"
+    end
+
+    def all_filters_empty?(properties)
+      properties.all? { |p| p[:filters].empty? }
     end
   end
 end

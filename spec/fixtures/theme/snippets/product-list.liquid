@@ -1,0 +1,12 @@
+{% if show_title %}
+  <h2>{{ heading | upcase }}</h2>
+{% endif %}
+
+{% for product in products %}
+  <div class="product">
+    <span>{{ product.name }}</span>
+    <span>{{ product.price | money }}</span>
+  </div>
+{% endfor %}
+
+<p>{{ total | plus: 0 }}</p>
