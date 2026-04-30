@@ -5,7 +5,9 @@ module Liquidbook
   # type/default/description metadata from @param comments (ParamParser).
   #
   # Variables with @param get their declared type/default/description.
-  # Variables without @param get type="unknown" with nil default/description.
+  # Variables without @param are type-inferred from filters and control structures
+  # (e.g. money → number, for-loop → array, truthy if → checkbox).
+  # When inference is inconclusive, type falls back to "unknown".
   # Section variables (name == "section") are excluded.
   #
   # Usage:

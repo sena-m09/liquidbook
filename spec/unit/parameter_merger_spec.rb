@@ -168,6 +168,20 @@ RSpec.describe Liquidbook::ParameterMerger do
       end
     end
 
+    context "when variable is a collection with filters" do
+      let(:variables) do
+        [{ name: "items", properties: [
+          { lookups: [], filters: ["size"], collection: true }
+        ] }]
+      end
+
+      it "infers type as array regardless of filters" do
+        result = merger.merge
+        items = result.find { |p| p["name"] == "items" }
+        expect(items["type"]).to eq("array")
+      end
+    end
+
     context "with an empty variables list" do
       it "returns an empty array" do
         expect(merger.merge).to eq([])
@@ -205,6 +219,28 @@ RSpec.describe Liquidbook::ParameterMerger do
         product = result.find { |p| p["name"] == "product" }
         expect(product["type"]).to eq("unknown")
         expect(product["default"]).to be_nil
+      end
+
+      it "infers types from filters and control structures in product-list.liquid" do
+        source = File.read(File.join(FIXTURE_THEME, "snippets", "product-list.liquid"))
+        analyzer = Liquidbook::TemplateAnalyzer.new(source)
+
+        result = described_class.new(
+          variables: analyzer.external_variables,
+          param_defs: []
+        ).merge
+
+        show_title = result.find { |p| p["name"] == "show_title" }
+        expect(show_title["type"]).to eq("checkbox")
+
+        heading = result.find { |p| p["name"] == "heading" }
+        expect(heading["type"]).to eq("text")
+
+        products = result.find { |p| p["name"] == "products" }
+        expect(products["type"]).to eq("array")
+
+        total = result.find { |p| p["name"] == "total" }
+        expect(total["type"]).to eq("number")
       end
     end
   end

@@ -134,6 +134,21 @@ RSpec.describe Liquidbook::TemplateAnalyzer do
       expect(status[:properties].first[:truthy_condition]).to be_nil
     end
 
+    it "marks unless condition variables with truthy_condition flag" do
+      source = "{% unless sold_out %}available{% endunless %}"
+      result = described_class.new(source).external_variables
+      sold_out = result.find { |v| v[:name] == "sold_out" }
+      expect(sold_out[:properties].first[:truthy_condition]).to be true
+    end
+
+    it "prioritizes collection over filters when both are present" do
+      source = "{% for item in items %}{{ item.name }}{% endfor %}{{ items | size }}"
+      result = described_class.new(source).external_variables
+      items = result.find { |v| v[:name] == "items" }
+      expect(items[:properties].first[:collection]).to be true
+      expect(items[:properties].first[:filters]).to include("size")
+    end
+
     context "with fixture templates" do
       it "detects card.liquid snippet variables" do
         source = File.read(File.join(FIXTURE_THEME, "snippets", "card.liquid"))
