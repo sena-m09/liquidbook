@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Snippet parameter form now submits via GET with query parameters (page navigation) instead of a JS-driven POST that swapped innerHTML; the Rendered HTML view stays in sync and preview state is bookmarkable/shareable via URL
+
+### Removed
+
+- `POST /api/render/:type/:name` and `GET /api/render/:type/:name` endpoints, along with the 1.5s live-reload polling that depended on them
+
 ## [0.1.1] - 2026-04-09
 
 ### Added
