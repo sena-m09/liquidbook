@@ -2,7 +2,7 @@
 
 module Liquidbook
   # FileSystem implementation for Liquid's render tag.
-  # Resolves template names by searching snippets/ and sections/ directories.
+  # Resolves template names by searching snippets/ directory.
   class ThemeFileSystem
     VALID_NAME = /\A[a-zA-Z0-9_-]+\z/
 
@@ -22,11 +22,8 @@ module Liquidbook
     private
 
     def full_path(template_name)
-      candidates = [
-        File.join(@theme_root, "snippets", "#{template_name}.liquid"),
-        File.join(@theme_root, "sections", "#{template_name}.liquid")
-      ]
-      candidates.find { |p| File.exist?(p) }
+      path = File.join(@theme_root, "snippets", "#{template_name}.liquid")
+      path if File.exist?(path)
     end
   end
 end
