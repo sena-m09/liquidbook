@@ -11,7 +11,7 @@ require_relative "liquidbook/parameter_merger"
 require_relative "liquidbook/mock_data"
 require_relative "liquidbook/filters/shopify_filters"
 require_relative "liquidbook/tags/section_tag"
-require_relative "liquidbook/tags/render_tag"
+require_relative "liquidbook/theme_file_system"
 require_relative "liquidbook/pid_manager"
 require_relative "liquidbook/theme_renderer"
 require_relative "liquidbook/server/app"
@@ -46,7 +46,6 @@ module Liquidbook
       Liquid::Environment.build do |e|
         e.register_filter(Filters::ShopifyFilters)
         e.register_tag("section", Tags::SectionTag)
-        e.register_tag("render", Tags::RenderTag)
       end
     end
   end

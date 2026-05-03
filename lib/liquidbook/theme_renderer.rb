@@ -46,7 +46,10 @@ module Liquidbook
       template = Liquid::Template.parse(template_source, environment: Liquidbook.environment)
       template.render(
         assigns,
-        registers: { theme_root: @theme_root }
+        registers: {
+          theme_root: @theme_root,
+          file_system: ThemeFileSystem.new(@theme_root)
+        }
       )
     end
 
