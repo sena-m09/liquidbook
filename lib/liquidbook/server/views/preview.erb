@@ -38,22 +38,32 @@
   <div style="width: 320px; flex-shrink: 0; position: sticky; top: 64px;">
 
     <!-- Snippet @param editor -->
-    <% if @params && !@params.empty? %>
+    <% if @form_params && !@form_params.empty? %>
       <div style="background: var(--lp-surface); border: 1px solid var(--lp-border); border-radius: var(--lp-radius); padding: 16px; margin-bottom: 16px;">
         <h3 style="font-size: 14px; margin: 0 0 12px; color: var(--lp-text-sub);">Parameters</h3>
-        <form id="param-form">
-          <% @params.each do |param| %>
+        <form method="get" action="/snippets/<%= h(@name) %>" accept-charset="UTF-8">
+          <% if (sidebar_q = request.params["q"]) && !sidebar_q.empty? %>
+            <input type="hidden" name="q" value="<%= h(sidebar_q) %>">
+          <% end %>
+          <% @form_params.each do |param| %>
             <div style="margin-bottom: 12px;">
               <label style="display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px;">
                 <%= h(param["name"]) %>
                 <span style="font-weight: normal; color: var(--lp-text-sub);"><%= h(param["description"]) %></span>
               </label>
               <% if param["type"] == "checkbox" %>
-                <input type="checkbox" name="<%= h(param["name"]) %>" <%= "checked" if param["default"] %> data-param>
+                <div style="display: flex; gap: 12px; font-size: 13px;">
+                  <label style="display: flex; align-items: center; gap: 4px;">
+                    <input type="radio" name="<%= h(param["name"]) %>" value="true" <%= "checked" if param["default"] %>> Yes
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px;">
+                    <input type="radio" name="<%= h(param["name"]) %>" value="false" <%= "checked" unless param["default"] %>> No
+                  </label>
+                </div>
               <% elsif param["type"] == "number" %>
-                <input type="number" name="<%= h(param["name"]) %>" value="<%= h(param["default"]) %>" style="width: 100%; padding: 6px 8px; border: 1px solid var(--lp-border); border-radius: 4px; font-size: 13px;" data-param>
+                <input type="number" name="<%= h(param["name"]) %>" value="<%= h(param["default"]) %>" style="width: 100%; padding: 6px 8px; border: 1px solid var(--lp-border); border-radius: 4px; font-size: 13px;">
               <% else %>
-                <input type="text" name="<%= h(param["name"]) %>" value="<%= h(param["default"]) %>" style="width: 100%; padding: 6px 8px; border: 1px solid var(--lp-border); border-radius: 4px; font-size: 13px;" data-param>
+                <input type="text" name="<%= h(param["name"]) %>" value="<%= h(param["default"]) %>" style="width: 100%; padding: 6px 8px; border: 1px solid var(--lp-border); border-radius: 4px; font-size: 13px;">
               <% end %>
             </div>
           <% end %>
@@ -128,56 +138,4 @@
   function setWidth(w) {
     document.getElementById('preview-frame').style.maxWidth = w;
   }
-
-  // Param form → re-render via POST
-  const form = document.getElementById('param-form');
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const overrides = {};
-      form.querySelectorAll('[data-param]').forEach(el => {
-        if (el.type === 'checkbox') {
-          overrides[el.name] = el.checked;
-        } else if (el.type === 'number') {
-          overrides[el.name] = Number(el.value);
-        } else {
-          overrides[el.name] = el.value;
-        }
-      });
-
-      const type = '<%= @type == "section" ? "sections" : "snippets" %>';
-      const name = '<%= @name %>';
-      try {
-        const res = await fetch(`/api/render/${type}/${name}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ overrides })
-        });
-        const data = await res.json();
-        if (data.html) {
-          document.getElementById('preview-frame').innerHTML = data.html;
-        }
-      } catch (err) {
-        console.error('Render error:', err);
-      }
-    });
-  }
-
-  // Live reload via polling (file changes)
-  (function() {
-    const type = '<%= @type == "section" ? "sections" : "snippets" %>';
-    const name = '<%= @name %>';
-    let lastHtml = null;
-
-    setInterval(async () => {
-      try {
-        const res = await fetch(`/api/render/${type}/${name}`);
-        const data = await res.json();
-        if (data.html && lastHtml !== null && data.html !== lastHtml) {
-          document.getElementById('preview-frame').innerHTML = data.html;
-        }
-        lastHtml = data.html;
-      } catch (e) {}
-    }, 1500);
-  })();
 </script>

@@ -46,16 +46,20 @@ module Liquidbook
       template = Liquid::Template.parse(template_source, environment: Liquidbook.environment)
       template.render(
         assigns,
-        registers: { theme_root: @theme_root }
+        registers: {
+          theme_root: @theme_root,
+          file_system: theme_file_system
+        }
       )
     end
 
-    # Extract @param definitions from a snippet
+    # Extract merged parameter definitions for a snippet.
+    # Combines TemplateAnalyzer auto-detected variables with @param metadata.
     def snippet_params(name)
       path = File.join(@theme_root, "snippets", "#{name}.liquid")
       return [] unless File.exist?(path)
 
-      ParamParser.new(File.read(path)).parse
+      merged_params(File.read(path))
     end
 
     # List available sections
@@ -71,7 +75,21 @@ module Liquidbook
     private
 
     def snippet_defaults(source)
-      ParamParser.new(source).default_assigns
+      merged_params(source).each_with_object({}) do |param, hash|
+        next if param["type"] == "unknown"
+
+        hash[param["name"]] = param["default"]
+      end
+    end
+
+    def merged_params(source)
+      variables  = TemplateAnalyzer.new(source).external_variables
+      param_defs = ParamParser.new(source).parse
+      ParameterMerger.new(variables: variables, param_defs: param_defs).merge
+    end
+
+    def theme_file_system
+      @theme_file_system ||= ThemeFileSystem.new(@theme_root)
     end
 
     def list_templates(dir)

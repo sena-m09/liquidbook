@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 require "sinatra/base"
-require "json"
 
 module Liquidbook
   module Server
     class App < Sinatra::Base
+      RESERVED_QUERY_KEYS = %w[name splat captures q].freeze
+
       set :views, File.expand_path("views", __dir__)
       set :public_folder, -> { File.join(Liquidbook.root, "assets") }
 
@@ -49,7 +50,6 @@ module Liquidbook
           @name = name
           @type = "section"
           @schema = load_schema("sections", name)
-          @params = []
           erb :preview
         rescue Liquidbook::Error => e
           status 404
@@ -61,12 +61,13 @@ module Liquidbook
       get "/snippets/:name" do
         name = params[:name]
         begin
-          overrides = parse_overrides(params)
+          @form_params = renderer.snippet_params(name)
+          overrides = parse_overrides(params, @form_params)
           @rendered = renderer.render_snippet(name, overrides: overrides)
           @name = name
           @type = "snippet"
           @schema = {}
-          @params = renderer.snippet_params(name)
+          @form_params = with_overrides_applied(@form_params, overrides)
           erb :preview
         rescue Liquidbook::Error => e
           status 404
@@ -100,47 +101,6 @@ module Liquidbook
         end
       end
 
-      # API: re-render with params (for live reload + param editing)
-      post "/api/render/:type/:name" do
-        content_type :json
-        type = params[:type]
-        name = params[:name]
-
-        begin
-          body = JSON.parse(request.body.read) rescue {}
-          overrides = body["overrides"] || {}
-
-          html = case type
-                 when "sections" then renderer.render_section(name, overrides: overrides)
-                 when "snippets" then renderer.render_snippet(name, overrides: overrides)
-                 else raise Error, "Unknown type: #{type}"
-                 end
-          { html: html }.to_json
-        rescue Liquidbook::Error => e
-          status 404
-          { error: e.message }.to_json
-        end
-      end
-
-      # API: re-render (GET for live reload)
-      get "/api/render/:type/:name" do
-        content_type :json
-        type = params[:type]
-        name = params[:name]
-
-        begin
-          html = case type
-                 when "sections" then renderer.render_section(name)
-                 when "snippets" then renderer.render_snippet(name)
-                 else raise Error, "Unknown type: #{type}"
-                 end
-          { html: html }.to_json
-        rescue Liquidbook::Error => e
-          status 404
-          { error: e.message }.to_json
-        end
-      end
-
       private
 
       def load_schema(dir, name)
@@ -150,14 +110,56 @@ module Liquidbook
         SchemaParser.new(File.read(path)).parse
       end
 
-      def parse_overrides(params)
+      # Build override hash from query params, coercing types based on @param metadata.
+      # Strings (including Japanese / multibyte) pass through as Rack-decoded UTF-8.
+      def parse_overrides(params, params_meta = nil)
+        type_by_name = build_type_index(params_meta)
         overrides = {}
-        params.each do |key, value|
-          next if %w[name splat captures].include?(key)
 
-          overrides[key] = value
+        params.each do |key, value|
+          next if RESERVED_QUERY_KEYS.include?(key)
+
+          overrides[key] = coerce_override(value, type_by_name[key])
         end
+
         overrides
+      end
+
+      def build_type_index(params_meta)
+        return {} unless params_meta
+
+        params_meta.each_with_object({}) { |p, h| h[p["name"]] = p["type"] }
+      end
+
+      def coerce_override(value, type)
+        case type
+        when "checkbox" then value.to_s == "true"
+        when "number" then coerce_number(value)
+        else value
+        end
+      end
+
+      def coerce_number(value)
+        str = value.to_s.strip
+        return str if str.empty?
+
+        Integer(str, 10)
+      rescue ArgumentError
+        begin
+          Float(str)
+        rescue ArgumentError
+          str
+        end
+      end
+
+      # Return a new params_meta list with each param's "default" replaced by the
+      # current override value, so the form re-renders with submitted values.
+      # Non-destructive: original hashes are preserved (snippet_params caching-safe).
+      def with_overrides_applied(params_meta, overrides)
+        params_meta.map do |p|
+          name = p["name"]
+          overrides.key?(name) ? p.merge("default" => overrides[name]) : p
+        end
       end
     end
   end

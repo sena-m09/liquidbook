@@ -1,0 +1,30 @@
+<section class="featured-collection">
+  <h2>{{ section.settings.title }}</h2>
+  <div class="featured-collection__grid">
+    {% for block in section.blocks %}
+      {% if block.type == "product" %}
+        {% render 'product-card', title: block.settings.title, price: block.settings.price, featured: block.settings.featured %}
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Featured collection",
+  "settings": [
+    { "id": "title", "type": "text", "label": "Heading", "default": "Featured products" }
+  ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        { "id": "title", "type": "text", "label": "Product name", "default": "Example product" },
+        { "id": "price", "type": "text", "label": "Price", "default": "1980" },
+        { "id": "featured", "type": "checkbox", "label": "Featured", "default": false }
+      ]
+    }
+  ]
+}
+{% endschema %}

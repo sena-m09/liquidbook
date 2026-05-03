@@ -1,0 +1,39 @@
+<section class="hero">
+  <h1>{{ section.settings.heading }}</h1>
+  <p>{{ section.settings.subheading }}</p>
+  {% if section.settings.show_button -%}
+    <a class="hero__button" href="{{ section.settings.button_link }}">
+      {{ section.settings.button_label }}
+    </a>
+  {%- endif %}
+  {% for block in section.blocks %}
+    {% if block.type == "slide" %}
+      <div class="hero__slide">
+        <img src="{{ block.settings.image }}" alt="{{ block.settings.alt }}">
+      </div>
+    {% endif %}
+  {% endfor %}
+</section>
+
+{% schema %}
+{
+  "name": "Hero banner",
+  "settings": [
+    { "id": "heading", "type": "text", "label": "Heading", "default": "Welcome to our store" },
+    { "id": "subheading", "type": "textarea", "label": "Subheading", "default": "Discover our latest collection" },
+    { "id": "show_button", "type": "checkbox", "label": "Show button", "default": true },
+    { "id": "button_label", "type": "text", "label": "Button label", "default": "Shop now" },
+    { "id": "button_link", "type": "url", "label": "Button link", "default": "/collections/all" }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Slide",
+      "settings": [
+        { "id": "image", "type": "text", "label": "Image URL", "default": "https://placehold.co/1200x400" },
+        { "id": "alt", "type": "text", "label": "Alt text", "default": "Hero image" }
+      ]
+    }
+  ]
+}
+{% endschema %}
