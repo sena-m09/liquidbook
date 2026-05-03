@@ -56,39 +56,51 @@ RSpec.describe Liquidbook::Server::App, type: :integration do
         expect(last_response.status).to eq(404)
       end
     end
-  end
 
-  # POST /api/render/:type/:name — 再レンダリング
-  describe "POST /api/render/:type/:name" do
-    it "returns JSON with rendered html for a section" do
-      payload = { overrides: {} }.to_json
-      post "/api/render/sections/hero", payload, "CONTENT_TYPE" => "application/json"
-      expect(last_response.status).to eq(200)
-      body = JSON.parse(last_response.body)
-      expect(body).to have_key("html")
-      expect(body["html"]).to include("hero")
-    end
+    context "with query parameter overrides" do
+      it "applies a string override to the rendered output" do
+        get "/snippets/card", title: "Query Title"
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).to include("Query Title")
+      end
 
-    it "applies overrides to snippet rendering" do
-      payload = { overrides: { "title" => "API Title" } }.to_json
-      post "/api/render/snippets/card", payload, "CONTENT_TYPE" => "application/json"
-      expect(last_response.status).to eq(200)
-      body = JSON.parse(last_response.body)
-      expect(body["html"]).to include("API Title")
-    end
+      it "preserves multibyte (Japanese) string overrides" do
+        get "/snippets/card", title: "テスト商品"
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).to include("テスト商品")
+      end
 
-    it "returns 404 for unknown type" do
-      post "/api/render/layouts/base", "{}", "CONTENT_TYPE" => "application/json"
-      expect(last_response.status).to eq(404)
-      body = JSON.parse(last_response.body)
-      expect(body).to have_key("error")
-    end
+      it "coerces number overrides to numeric values for filters" do
+        get "/snippets/card", price: "2980"
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).to include("¥2980")
+      end
 
-    it "returns 404 for missing template" do
-      post "/api/render/sections/ghost", "{}", "CONTENT_TYPE" => "application/json"
-      expect(last_response.status).to eq(404)
-      body = JSON.parse(last_response.body)
-      expect(body["error"]).to include("ghost")
+      it "coerces checkbox value=true to true" do
+        get "/snippets/card", featured: "true"
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).to include("card--featured")
+      end
+
+      it "coerces checkbox value=false to false" do
+        get "/snippets/card", featured: "false"
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).not_to include("card--featured")
+      end
+
+      it "preserves @param checkbox defaults when the key is absent" do
+        # The radio pair always sends a value when the form is submitted;
+        # absence means a non-form-submission (e.g. direct URL with only title).
+        get "/snippets/card", title: "Other"
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).not_to include("card--featured")
+      end
+
+      it "ignores the sidebar search q parameter when building overrides" do
+        get "/snippets/card", q: "card"
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).to include("My Card")
+      end
     end
   end
 
