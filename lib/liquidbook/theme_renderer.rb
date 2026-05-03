@@ -46,7 +46,10 @@ module Liquidbook
       template = Liquid::Template.parse(template_source, environment: Liquidbook.environment)
       template.render(
         assigns,
-        registers: { theme_root: @theme_root }
+        registers: {
+          theme_root: @theme_root,
+          file_system: theme_file_system
+        }
       )
     end
 
@@ -83,6 +86,10 @@ module Liquidbook
       variables  = TemplateAnalyzer.new(source).external_variables
       param_defs = ParamParser.new(source).parse
       ParameterMerger.new(variables: variables, param_defs: param_defs).merge
+    end
+
+    def theme_file_system
+      @theme_file_system ||= ThemeFileSystem.new(@theme_root)
     end
 
     def list_templates(dir)
