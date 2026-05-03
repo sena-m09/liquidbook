@@ -88,6 +88,12 @@ RSpec.describe Liquidbook::Server::App, type: :integration do
         expect(last_response.body).not_to include("card--featured")
       end
 
+      it "coerces checkbox empty value to false" do
+        get "/snippets/card", featured: ""
+        expect(last_response.status).to eq(200)
+        expect(last_response.body).not_to include("card--featured")
+      end
+
       it "preserves @param checkbox defaults when the key is absent" do
         # The radio pair always sends a value when the form is submitted;
         # absence means a non-form-submission (e.g. direct URL with only title).

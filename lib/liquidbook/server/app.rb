@@ -133,7 +133,7 @@ module Liquidbook
 
       def coerce_override(value, type)
         case type
-        when "checkbox" then value.to_s != "false"
+        when "checkbox" then value.to_s == "true"
         when "number" then coerce_number(value)
         else value
         end
