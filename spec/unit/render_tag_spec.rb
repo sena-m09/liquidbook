@@ -93,4 +93,38 @@ RSpec.describe "{% render %} tag" do
       expect(html).to include("Illegal template name")
     end
   end
+
+  describe "variable as template name (Shopify app block compatibility)" do
+    it "does not raise SyntaxError for {% render variable %}" do
+      expect { render_liquid("{% render block %}") }.not_to raise_error
+    end
+
+    it "outputs a placeholder comment when a block-like Hash is passed" do
+      html = render_liquid("{% render block %}", { "block" => { "type" => "app" } })
+      expect(html).to eq("<!-- render block: type=app -->")
+    end
+
+    it "outputs a placeholder for each block in a section.blocks-style loop" do
+      html = render_liquid(
+        "{%- for block in section_blocks -%}{% render block %}{%- endfor -%}",
+        {
+          "section_blocks" => [
+            { "type" => "app" },
+            { "type" => "@app" }
+          ]
+        }
+      )
+      expect(html).to eq("<!-- render block: type=app --><!-- render block: type=@app -->")
+    end
+
+    it "renders a snippet when the variable resolves to a snippet name string" do
+      html = render_liquid("{% render snippet_name %}", { "snippet_name" => "badge" })
+      expect(html).to include('<span class="badge">')
+    end
+
+    it "outputs a cannot-resolve placeholder when the variable is undefined" do
+      html = render_liquid("{% render missing %}")
+      expect(html).to eq("<!-- render: cannot resolve template name -->")
+    end
+  end
 end
